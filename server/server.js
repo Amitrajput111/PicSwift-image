@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import https from 'https';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,6 +39,32 @@ const hashPassword = (password) => {
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash.toString(16);
+};
+
+// Helper: Native HTTPS Google Token Verifier (Compatible with all Node.js versions)
+const verifyGoogleToken = (credential) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error('Invalid JSON from Google Token Verification API'));
+          }
+        } else {
+          reject(new Error(`Google token validation failed with status ${res.statusCode}`));
+        }
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
 };
 
 // Middlewares
@@ -133,13 +160,8 @@ app.post('/api/auth/google', async (req, res) => {
   }
 
   try {
-    // Validate Google JWT Token with Google API securely
-    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
-    if (!googleRes.ok) {
-      return res.status(400).json({ error: 'Failed to verify Google token.' });
-    }
-
-    const payload = await googleRes.json();
+    // Validate Google JWT Token with Google API securely using native HTTPS
+    const payload = await verifyGoogleToken(credential);
     const { email, name } = payload;
 
     if (!email) {
@@ -178,7 +200,7 @@ app.post('/api/auth/google', async (req, res) => {
     });
   } catch (err) {
     console.error('Google verification failed:', err);
-    return res.status(500).json({ error: 'Authentication service unavailable.' });
+    return res.status(400).json({ error: err.message || 'Google token verification failed.' });
   }
 });
 
