@@ -10,8 +10,10 @@ import {
   getCurrentUser, 
   getUsageCount, 
   isUserLoggedIn, 
-  loginUser, 
-  logoutUser 
+  signupUserApi, 
+  loginUserApi, 
+  logoutUserApi,
+  checkServerSession
 } from './utils/usageTracker';
 
 export default function App() {
@@ -33,6 +35,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState<boolean>(false);
 
   useEffect(() => {
+    // Verify server session on application mount
+    checkServerSession();
+
     const handleUsage = () => {
       const currentUsages = getUsageCount();
       setUsages(currentUsages);
@@ -55,7 +60,7 @@ export default function App() {
     };
   }, []);
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
 
@@ -74,25 +79,49 @@ export default function App() {
 
     setAuthLoading(true);
 
-    // Simulate auth latency (300ms) for high fidelity professional look
-    setTimeout(() => {
-      loginUser(email, name || undefined);
+    try {
+      let result;
+      if (authMode === 'signup') {
+        result = await signupUserApi(email, password, name);
+      } else {
+        result = await loginUserApi(email, password);
+      }
+
+      if (result.success) {
+        setShowAuthModal(false);
+        setEmail('');
+        setPassword('');
+        setName('');
+      } else {
+        setAuthError(result.error || 'Authentication failed.');
+      }
+    } catch (err) {
+      setAuthError('Failed to connect to backend server. Is it running?');
+    } finally {
       setAuthLoading(false);
-      setShowAuthModal(false);
-      // Reset form states
-      setEmail('');
-      setPassword('');
-      setName('');
-    }, 400);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setAuthLoading(true);
-    setTimeout(() => {
-      loginUser('amit.rajput@gmail.com', 'Amit Rajput');
+    setAuthError(null);
+    try {
+      const result = await signupUserApi('amit.rajput@gmail.com', 'google_mock_secured_password_123', 'Amit Rajput');
+      if (result.success) {
+        setShowAuthModal(false);
+      } else {
+        const loginRes = await loginUserApi('amit.rajput@gmail.com', 'google_mock_secured_password_123');
+        if (loginRes.success) {
+          setShowAuthModal(false);
+        } else {
+          setAuthError('Google Account login failed.');
+        }
+      }
+    } catch (err) {
+      setAuthError('Failed to connect to backend authentication server.');
+    } finally {
       setAuthLoading(false);
-      setShowAuthModal(false);
-    }, 400);
+    }
   };
 
   const isGated = usages >= 3 && !user;
@@ -106,7 +135,7 @@ export default function App() {
         setActiveTab={setActiveTab} 
         user={user}
         onAuthClick={() => { setAuthMode('signin'); setShowAuthModal(true); }}
-        onLogoutClick={() => logoutUser()}
+        onLogoutClick={() => logoutUserApi()}
       />
 
       {/* Main Content Workspace */}

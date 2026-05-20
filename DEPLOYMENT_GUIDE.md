@@ -1,51 +1,52 @@
-# PicSwift - Fast Static Deployment Guide 🚀
+# PicSwift - Production Deployment Guide 🚀
 
-Your website is 100% client-side, which means you can deploy it to the web for **free** in less than 2 minutes using **Netlify** or **Vercel** without writing any code or setting up Git repositories.
-
----
-
-## ⚡ Option 1: Drag & Drop with Netlify (Easiest - 1 Minute)
-
-1. Open your browser and go to **[Netlify Drop](https://app.netlify.com/drop)**.
-2. Open the project folder on your computer:
-   `C:\Users\amitr\.gemini\antigravity\scratch\clarity-ai-suite`
-3. Drag and drop the **`dist`** folder directly into the browser upload box on the Netlify Drop page.
-4. Your website is instantly live! Netlify will provide a free link (e.g., `https://random-name.netlify.app`).
+Your project consists of a **Vite + React frontend** and a secure **Node.js/Express backend** that handles JWT sessions and HTTP-Only cookies.
 
 ---
 
-## 🚀 Option 2: Deploying with Vercel CLI (Automatic updates - 2 Minutes)
+## 💻 1. Local Development (Running Both Together)
 
-If you want to deploy directly from your command line:
+To run the full authenticated application locally, you will start the backend and the frontend in two separate terminals:
 
-1. Open your command line in the project folder:
-   `C:\Users\amitr\.gemini\antigravity\scratch\clarity-ai-suite`
-2. Install the Vercel CLI globally:
-   ```bash
-   npm install -g vercel
-   ```
-3. Run the deployment command:
-   ```bash
-   vercel
-   ```
-4. Follow the brief prompts (login, project setup, etc.) to publish your website instantly.
+### Terminal A: Start the Backend Server
+```bash
+cd server
+npm install
+npm start
+```
+*The backend will boot up on **`http://localhost:5000`**.*
 
----
+### Terminal B: Start the Frontend Client
+```bash
+# In the root folder
+npm install
+npm run dev
+```
+*The client will boot up on **`http://localhost:5173`**.*
 
-## 🔗 Option 3: Connect Your Custom Domain
-
-Once your site is live on Netlify or Vercel:
-1. Go to your site settings on Netlify/Vercel.
-2. Click **Add Domain** and enter your custom domain (e.g., `picswift.com` or `fastpictools.com`).
-3. Set your domain's DNS settings at your domain registrar (e.g., GoDaddy, Namecheap) to point to Netlify/Vercel.
-4. The hosting service will automatically issue a **free SSL security certificate (HTTPS)**.
+The frontend is pre-configured to communicate with the backend using credentials, meaning your **HTTP-Only cookies** will save automatically in the browser for secure sessions.
 
 ---
 
-## 💰 Applying for Google AdSense
+## ☁️ 2. Production Hosting Options
 
-Once your custom domain is connected and live:
-1. Register/Log in to **[Google AdSense](https://adsense.google.com/)**.
-2. Submit your domain for review.
-3. The AdSense bots will scan your site. Since we already set up functional **Privacy Policy, Terms of Service, Contact details**, and **rich SEO guides**, your application has everything required to pass review.
-4. Once approved, place your AdSense publisher ad-codes inside `src/components/AdPlaceholder.tsx` (replacing the styled containers) to begin generating revenue!
+### Option A: Serverless Backend on Vercel (Easiest - All-in-One)
+Vercel allows you to deploy the backend directly inside the same project folder by placing Express routes inside an **`/api`** folder. 
+1. The project is fully setup and configured to auto-deploy.
+2. Link your repository: **`https://github.com/Amitrajput111/PicSwift-image`** to Vercel.
+3. Vercel automatically deploys the static files and compiles the backend routes.
+
+### Option B: Split Hosting (Express Server on Render / Railway)
+You can host the Express backend for free on **[Render](https://render.com/)** or **[Railway](https://railway.app/)**:
+1. Connect your GitHub repository to Render and choose **Web Service**.
+2. Set the build command to `npm install` and start command to `node server/server.js`.
+3. In your React code, the API calls will dynamically direct requests to your Render URL.
+
+---
+
+## 💰 Google AdSense & ads.txt Verification
+
+1. Place your AdSense codes inside `src/components/AdPlaceholder.tsx`.
+2. Go to your AdSense dashboard and link your custom domain (e.g., `picswift.com`).
+3. Make sure your custom domain has the `/ads.txt` file readable (which is already configured inside your `public/` directory!).
+4. Once verified, Google Ads will start rendering in the slots and generate passive revenue with **$0 server compute overhead**!
