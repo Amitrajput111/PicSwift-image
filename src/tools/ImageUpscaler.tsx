@@ -3,6 +3,7 @@ import { Download, RefreshCw, AlertCircle, Sparkles, Sliders, Eye } from 'lucide
 import Dropzone from '../components/Dropzone';
 import { loadImage } from '../utils/compression';
 import AdPlaceholder from '../components/AdPlaceholder';
+import { incrementUsageCount } from '../utils/usageTracker';
 
 export default function ImageUpscaler() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -96,6 +97,7 @@ export default function ImageUpscaler() {
             originalHeight: originalH
           });
           setStage('completed');
+          incrementUsageCount();
         } else {
           setErrorMessage('Failed to generate final output image.');
           setStage('error');

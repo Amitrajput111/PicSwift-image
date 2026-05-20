@@ -4,6 +4,7 @@ import Dropzone from '../components/Dropzone';
 import { loadImage } from '../utils/compression';
 import { removeBackground } from '../utils/onnxHelper';
 import AdPlaceholder from '../components/AdPlaceholder';
+import { incrementUsageCount } from '../utils/usageTracker';
 
 export default function BackgroundRemover() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -49,6 +50,7 @@ export default function BackgroundRemover() {
         url
       });
       setStage('completed');
+      incrementUsageCount();
     } catch (err) {
       console.error('Background removal error:', err);
       setErrorMessage(

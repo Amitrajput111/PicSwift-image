@@ -4,6 +4,7 @@ import { Download, RefreshCw, Layers, ArrowRight, Eye } from 'lucide-react';
 import Dropzone from '../components/Dropzone';
 import { compressToTargetSize } from '../utils/compression';
 import AdPlaceholder from '../components/AdPlaceholder';
+import { incrementUsageCount } from '../utils/usageTracker';
 
 export default function ImageCompressor() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -42,6 +43,7 @@ export default function ImageCompressor() {
         sizeKB: result.sizeKB,
         originalKB: Number((selectedFile.size / 1024).toFixed(2))
       });
+      incrementUsageCount();
     } catch (err) {
       console.error('Compression failed:', err);
       alert('Failed to compress image. Try another file or format.');

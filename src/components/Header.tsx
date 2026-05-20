@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Sun, Moon, Sparkles, Image, Minimize2 } from 'lucide-react';
+import { Sun, Moon, Sparkles, Image, Minimize2, User, LogOut } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  user: { email: string; name?: string } | null;
+  onAuthClick: () => void;
+  onLogoutClick: () => void;
 }
 
-export default function Header({ activeTab, setActiveTab }: HeaderProps) {
+export default function Header({ activeTab, setActiveTab, user, onAuthClick, onLogoutClick }: HeaderProps) {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
@@ -84,15 +87,65 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
           })}
         </nav>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="btn btn-secondary"
-          aria-label="Toggle Theme"
-          style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px' }}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
+        {/* Action Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="btn btn-secondary"
+            aria-label="Toggle Theme"
+            style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px' }}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          {/* Authentication Badge */}
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div 
+                title={user.email}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--border-color)',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600
+                }}
+              >
+                <User size={14} style={{ color: 'var(--accent-primary)' }} />
+                <span className="user-email" style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.name || user.email.split('@')[0]}
+                </span>
+              </div>
+              <button
+                onClick={onLogoutClick}
+                className="btn btn-secondary"
+                title="Log Out"
+                style={{ width: '40px', height: '40px', padding: 0, borderRadius: '10px' }}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onAuthClick}
+              className="btn btn-primary"
+              style={{
+                padding: '0.5rem 1.25rem',
+                fontSize: '0.9rem',
+                borderRadius: '10px',
+                fontWeight: 600,
+                boxShadow: '0 4px 10px var(--accent-shadow)'
+              }}
+            >
+              Sign In
+            </button>
+          )}
+        </div>
 
       </div>
       
@@ -104,6 +157,9 @@ export default function Header({ activeTab, setActiveTab }: HeaderProps) {
           }
           header > div {
             justify-content: center !important;
+          }
+          .user-email {
+            display: none;
           }
         }
       `}</style>
