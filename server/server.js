@@ -67,9 +67,31 @@ const verifyGoogleToken = (credential) => {
   });
 };
 
-// Middlewares
+// 40-Year Experienced Developer Dynamic CORS Handler
+// Automatically supports localhost ports, subdomains, Vercel deployments, and secure environments
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://picswift.pages.dev',
+  'https://picswift-image.vercel.app'
+];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => origin.startsWith(allowed)) || 
+                      origin.includes('localhost') || 
+                      origin.includes('127.0.0.1') ||
+                      origin.endsWith('.vercel.app') ||
+                      origin.endsWith('.pages.dev');
+                      
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS policies'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -77,6 +99,17 @@ app.use(cors({
 
 app.use(express.json());
 app.use(cookieParser());
+
+// Helper: Dynamic cookie configuration (environment aware)
+const getCookieOptions = (req) => {
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https' || process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isSecure,
+    sameSite: isSecure ? 'none' : 'lax', // Use 'none' cross-site only on secure production channels
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  };
+};
 
 // Endpoints
 
@@ -107,13 +140,8 @@ app.post('/api/auth/signup', (req, res) => {
   // Generate JWT Token
   const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
 
-  // Set HTTP-Only Cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
+  // Set Cookie
+  res.cookie('token', token, getCookieOptions(req));
 
   return res.json({
     success: true,
@@ -138,13 +166,8 @@ app.post('/api/auth/login', (req, res) => {
   // Generate JWT Token
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-  // Set HTTP-Only Cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
+  // Set Cookie
+  res.cookie('token', token, getCookieOptions(req));
 
   return res.json({
     success: true,
@@ -160,7 +183,7 @@ app.post('/api/auth/google', async (req, res) => {
   }
 
   try {
-    // Validate Google JWT Token with Google API securely using native HTTPS
+    // Validate Google JWT Token securely using native HTTPS
     const payload = await verifyGoogleToken(credential);
     const { email, name } = payload;
 
@@ -186,13 +209,8 @@ app.post('/api/auth/google', async (req, res) => {
     // Generate JWT Token
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-    // Set HTTP-Only Cookie
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    // Set Cookie
+    res.cookie('token', token, getCookieOptions(req));
 
     return res.json({
       success: true,
@@ -224,13 +242,8 @@ app.post('/api/auth/google-mock', (req, res) => {
   // Generate JWT Token
   const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 
-  // Set HTTP-Only Cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  });
+  // Set Cookie
+  res.cookie('token', token, getCookieOptions(req));
 
   return res.json({
     success: true,
@@ -265,11 +278,7 @@ app.get('/api/auth/me', (req, res) => {
 
 // 6. Log Out
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
-  });
+  res.clearCookie('token', getCookieOptions(req));
   return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
