@@ -1,52 +1,71 @@
 # PicSwift - Production Deployment Guide 🚀
 
-Your project consists of a **Vite + React frontend** and a secure **Node.js/Express backend** that handles JWT sessions and HTTP-Only cookies.
+Your project is built as a highly optimized, production-ready fullstack application consisting of a **React + Vite frontend** and a **secure Express + MongoDB backend**.
 
 ---
 
-## 💻 1. Local Development (Running Both Together)
+## 💻 1. Unified Local Development (Recommended)
 
-To run the full authenticated application locally, you will start the backend and the frontend in two separate terminals:
+To eliminate CORS and cookie-sharing port blocks on your browser, you can run the backend and frontend together with a proxy configuration.
 
-### Terminal A: Start the Backend Server
+### Step 1: Start the Backend Database Server
+Open a terminal and run:
 ```bash
 cd server
 npm install
 npm start
 ```
-*The backend will boot up on **`http://localhost:5000`**.*
+*The backend server will launch on **`http://localhost:5000`**.*
 
-### Terminal B: Start the Frontend Client
+### Step 2: Start the Frontend Client
+Open a second terminal in the root directory and run:
 ```bash
-# In the root folder
 npm install
 npm run dev
 ```
 *The client will boot up on **`http://localhost:5173`**.*
-
-The frontend is pre-configured to communicate with the backend using credentials, meaning your **HTTP-Only cookies** will save automatically in the browser for secure sessions.
-
----
-
-## ☁️ 2. Production Hosting Options
-
-### Option A: Serverless Backend on Vercel (Easiest - All-in-One)
-Vercel allows you to deploy the backend directly inside the same project folder by placing Express routes inside an **`/api`** folder. 
-1. The project is fully setup and configured to auto-deploy.
-2. Link your repository: **`https://github.com/Amitrajput111/PicSwift-image`** to Vercel.
-3. Vercel automatically deploys the static files and compiles the backend routes.
-
-### Option B: Split Hosting (Express Server on Render / Railway)
-You can host the Express backend for free on **[Render](https://render.com/)** or **[Railway](https://railway.app/)**:
-1. Connect your GitHub repository to Render and choose **Web Service**.
-2. Set the build command to `npm install` and start command to `node server/server.js`.
-3. In your React code, the API calls will dynamically direct requests to your Render URL.
+*The client automatically proxies all `/api` routes directly to the backend. Your session cookies will save natively and securely!*
 
 ---
 
-## 💰 Google AdSense & ads.txt Verification
+## ☁️ 2. Production Deployment (Unified Architecture)
 
-1. Place your AdSense codes inside `src/components/AdPlaceholder.tsx`.
-2. Go to your AdSense dashboard and link your custom domain (e.g., `picswift.com`).
-3. Make sure your custom domain has the `/ads.txt` file readable (which is already configured inside your `public/` directory!).
-4. Once verified, Google Ads will start rendering in the slots and generate passive revenue with **$0 server compute overhead**!
+This application is built with a **unified production design**. When you compile the frontend, the Express backend serves all React pages on the exact same port. You only need to deploy **one single application server** (on Render, Railway, or Heroku)!
+
+### Step 1: Compile the React Assets
+In the root directory, compile your frontend:
+```bash
+npm run build
+```
+This builds all HTML/JS assets into the `/dist` directory.
+
+### Step 2: Push to GitHub & Deploy
+1. Push all files to your repository: `https://github.com/Amitrajput111/PicSwift-image`
+2. Link your GitHub repo to a cloud provider like **[Render](https://render.com/)**, **[Railway](https://railway.app/)**, or **[Heroku](https://heroku.com/)**.
+3. Configure the following build/start commands in your cloud host dashboard:
+   * **Root Directory:** `./`
+   * **Build Command:** `npm install && npm run build && cd server && npm install`
+   * **Start Command:** `node server/server.js`
+
+---
+
+## 🗄️ 3. Production Database Connection (MongoDB)
+
+For handling high volumes of users (10,000 to 20,000+ accounts), configure a cloud database:
+
+1. Create a free account at **[MongoDB Atlas](https://www.mongodb.com/cloud/atlas)**.
+2. Deploy a free cluster and fetch your MongoDB Connection String.
+3. In your cloud hosting provider (Render, Railway, etc.), define the **Environment Variables**:
+   * `NODE_ENV` = `production`
+   * `JWT_SECRET` = `a_long_random_secure_character_string`
+   * `MONGODB_URI` = `mongodb+srv://<username>:<password>@cluster.mongodb.net/picswift`
+4. When the server launches, it detects the connection string and connects automatically to MongoDB.
+
+---
+
+## 💰 4. Google AdSense & ads.txt Verification
+
+1. Place your AdSense slot IDs inside `src/components/AdPlaceholder.tsx`.
+2. Connect your domain in your Google AdSense Dashboard.
+3. Verify that your `/ads.txt` file is readable (already set up in your `public/ads.txt` folder).
+4. Google will begin serving ads in your placeholders, yielding passive revenue as users process images!
