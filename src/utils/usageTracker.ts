@@ -105,3 +105,41 @@ export const logoutUserApi = async (): Promise<void> => {
   localStorage.setItem('pic_swift_usages', '0');
   window.dispatchEvent(new Event('auth_state_changed'));
 };
+
+export const googleLoginApi = async (credential: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      localStorage.setItem('pic_swift_user', JSON.stringify(data.user));
+      window.dispatchEvent(new Event('auth_state_changed'));
+      return { success: true };
+    }
+    return { success: false, error: data.error || 'Google login failed.' };
+  } catch (err) {
+    return { success: false, error: 'Network error connecting to Google Auth API.' };
+  }
+};
+
+export const googleMockLoginApi = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/google-mock`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      localStorage.setItem('pic_swift_user', JSON.stringify(data.user));
+      window.dispatchEvent(new Event('auth_state_changed'));
+      return { success: true };
+    }
+    return { success: false, error: data.error || 'Google Mock login failed.' };
+  } catch (err) {
+    return { success: false, error: 'Network error connecting to mock auth.' };
+  }
+};

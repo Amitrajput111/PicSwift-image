@@ -13,7 +13,9 @@ import {
   signupUserApi, 
   loginUserApi, 
   logoutUserApi,
-  checkServerSession
+  checkServerSession,
+  googleLoginApi,
+  googleMockLoginApi
 } from './utils/usageTracker';
 
 export default function App() {
@@ -59,6 +61,34 @@ export default function App() {
       window.removeEventListener('auth_state_changed', handleAuth);
     };
   }, []);
+
+  useEffect(() => {
+    if (showAuthModal && typeof window !== 'undefined' && (window as any).google) {
+      try {
+        (window as any).google.accounts.id.initialize({
+          client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+          callback: async (response: any) => {
+            setAuthLoading(true);
+            setAuthError(null);
+            try {
+              const result = await googleLoginApi(response.credential);
+              if (result.success) {
+                setShowAuthModal(false);
+              } else {
+                setAuthError(result.error || 'Google Authentication failed.');
+              }
+            } catch (err) {
+              setAuthError('Failed to verify Google token with backend server.');
+            } finally {
+              setAuthLoading(false);
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Google Identity initialization failed:', err);
+      }
+    }
+  }, [showAuthModal]);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,19 +136,14 @@ export default function App() {
     setAuthLoading(true);
     setAuthError(null);
     try {
-      const result = await signupUserApi('amit.rajput@gmail.com', 'google_mock_secured_password_123', 'Amit Rajput');
+      const result = await googleMockLoginApi();
       if (result.success) {
         setShowAuthModal(false);
       } else {
-        const loginRes = await loginUserApi('amit.rajput@gmail.com', 'google_mock_secured_password_123');
-        if (loginRes.success) {
-          setShowAuthModal(false);
-        } else {
-          setAuthError('Google Account login failed.');
-        }
+        setAuthError(result.error || 'Google Login failed.');
       }
     } catch (err) {
-      setAuthError('Failed to connect to backend authentication server.');
+      setAuthError('Failed to connect to backend authentication server. Ensure the server is running on port 5000!');
     } finally {
       setAuthLoading(false);
     }

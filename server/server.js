@@ -30,7 +30,6 @@ const writeUsers = (users) => {
 
 // Helper: Hashing function in pure JS (SHA-256 equivalent for portability)
 const hashPassword = (password) => {
-  // Simple, deterministic salt & hash helper to avoid binary C++ native compile issues on Windows
   let hash = 0;
   const salted = password + "picswift_salt_982";
   for (let i = 0; i < salted.length; i++) {
@@ -126,7 +125,98 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// 3. Get Session User (Verify HTTP-Only Token)
+// 3. Google OAuth Verification (Real Production Mode)
+app.post('/api/auth/google', async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) {
+    return res.status(400).json({ error: 'Google credentials are required.' });
+  }
+
+  try {
+    // Validate Google JWT Token with Google API securely
+    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+    if (!googleRes.ok) {
+      return res.status(400).json({ error: 'Failed to verify Google token.' });
+    }
+
+    const payload = await googleRes.json();
+    const { email, name } = payload;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Google profile did not contain email address.' });
+    }
+
+    const users = readUsers();
+    let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+      user = {
+        id: Date.now().toString(),
+        name: name || email.split('@')[0],
+        email: email.toLowerCase(),
+        password: 'google_oauth_registered_account_secure',
+        usages: 0
+      };
+      users.push(user);
+      writeUsers(users);
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set HTTP-Only Cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      success: true,
+      user: { name: user.name, email: user.email }
+    });
+  } catch (err) {
+    console.error('Google verification failed:', err);
+    return res.status(500).json({ error: 'Authentication service unavailable.' });
+  }
+});
+
+// 4. Google Auth Mock (For local development testing without Client ID keys)
+app.post('/api/auth/google-mock', (req, res) => {
+  const users = readUsers();
+  let user = users.find(u => u.email.toLowerCase() === 'amit.rajput@gmail.com');
+
+  if (!user) {
+    user = {
+      id: Date.now().toString(),
+      name: 'Amit Rajput',
+      email: 'amit.rajput@gmail.com',
+      password: 'google_oauth_registered_account_secure',
+      usages: 0
+    };
+    users.push(user);
+    writeUsers(users);
+  }
+
+  // Generate JWT Token
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+  // Set HTTP-Only Cookie
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+
+  return res.json({
+    success: true,
+    user: { name: user.name, email: user.email }
+  });
+});
+
+// 5. Get Session User (Verify HTTP-Only Token)
 app.get('/api/auth/me', (req, res) => {
   const token = req.cookies.token;
   if (!token) {
@@ -151,7 +241,7 @@ app.get('/api/auth/me', (req, res) => {
   }
 });
 
-// 4. Log Out
+// 6. Log Out
 app.post('/api/auth/logout', (req, res) => {
   res.clearCookie('token', {
     httpOnly: true,
