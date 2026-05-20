@@ -3,51 +3,54 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
 import https from 'https';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { UserRepo } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'picswift_super_secret_session_token_key_12345';
 
-// Helper: Hashing function in pure JS (SHA-256 equivalent for portability)
-const hashPassword = (password) => {
-  let hash = 0;
-  const salted = password + "picswift_salt_982";
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash.toString(16);
-};
+// 1. Production Security Headers (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
+      connectSrc: ["'self'", "http://localhost:5000", "http://127.0.0.1:5000", "https://oauth2.googleapis.com"],
+      frameSrc: ["https://accounts.google.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"]
+    }
+  },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" } // Crucial for Google Sign-In popups
+}));
 
-// Helper: Native HTTPS Google Token Verifier (Compatible with all Node.js versions)
-const verifyGoogleToken = (credential) => {
-  return new Promise((resolve, reject) => {
-    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
-    https.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        if (res.statusCode === 200) {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(new Error('Invalid JSON from Google Token Verification API'));
-          }
-        } else {
-          reject(new Error(`Google token validation failed with status ${res.statusCode}`));
-        }
-      });
-    }).on('error', (err) => {
-      reject(err);
-    });
-  });
-};
+// 2. Global Rate Limiting (Prevents Denial of Service)
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Limit each IP to 200 requests per window
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes.' }
+});
+app.use('/api/', globalLimiter);
 
-// 40-Year Experienced Developer Dynamic CORS Handler
+// 3. Bruteforce Prevention Rate Limiter for sensitive Auth Endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 login/signup attempts per window
+  message: { error: 'Too many authentication attempts. Please try again in 15 minutes.' }
+});
+app.use('/api/auth/signup', authLimiter);
+app.use('/api/auth/login', authLimiter);
+
+// 4. CORS Dynamic Whitelisting
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -88,6 +91,44 @@ const getCookieOptions = (req) => {
     sameSite: isSecure ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   };
+};
+
+// Helper: Hashing function in pure JS (SHA-256 equivalent for portability)
+const hashPassword = (password) => {
+  let hash = 0;
+  const salted = password + "picswift_salt_982";
+  for (let i = 0; i < salted.length; i++) {
+    const char = salted.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(16);
+};
+
+// Helper: Native HTTPS Google Token Verifier (Compatible with all Node.js versions)
+const verifyGoogleToken = (credential) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode === 200) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error('Invalid JSON from Google Token Verification API'));
+          }
+        } else {
+          reject(new Error(`Google token validation failed with status ${res.statusCode}`));
+        }
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
 };
 
 // Endpoints
@@ -254,10 +295,39 @@ app.get('/api/auth/me', async (req, res) => {
 
 // 6. Log Out
 app.post('/api/auth/logout', (req, res) => {
-  res.clearCookie('token', getCookieOptions(req));
+  const options = { ...getCookieOptions(req) };
+  delete options.maxAge;
+  res.clearCookie('token', options);
   return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
-app.listen(PORT, () => {
+// 5. Serving compiled Frontend Static Assets in Production (Unified App Architecture)
+const DIST_PATH = path.join(__dirname, '../dist');
+if (fs.existsSync(DIST_PATH)) {
+  console.log(`📦 Serving compiled static client assets from: ${DIST_PATH}`);
+  app.use(express.static(DIST_PATH));
+  
+  // Single Page App routing fallback: redirects everything else to react bundle
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next(); // Pass through APIs
+    }
+    res.sendFile(path.join(DIST_PATH, 'index.html'));
+  });
+}
+
+const server = app.listen(PORT, () => {
   console.log(`🚀 PicSwift backend running on http://localhost:${PORT}`);
 });
+
+// 6. Graceful Server Shutdown (Handles SIGTERM/SIGINT)
+const gracefulShutdown = () => {
+  console.log('🛑 Shutting down backend server gracefully...');
+  server.close(() => {
+    console.log('💤 All server connections closed. Shutdown complete.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
