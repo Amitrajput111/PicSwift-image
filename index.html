@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22url(%23g)%22/><defs><linearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop offset=%220%25%22 stop-color=%22%2300f2fe%22/><stop offset=%22100%25%22 stop-color=%22%234facfe%22/></linearGradient></defs><text y=%22.9em%22 font-size=%2280%22 font-weight=%22800%22 x=%2222%22 fill=%22%230a0c10%22 font-family=%22system-ui%22>P</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- SEO Titles and Tags -->
+    <title>PicSwift - Free AI Background Remover, Target Size Image Compressor & Upscaler</title>
+    <meta name="description" content="100% free browser-side AI image utility suite. Remove backgrounds from photos in HD, compress images to exact KB sizes (under 20kb, 50kb), and upscale images to 4x locally with PicSwift. No file uploads to server, guaranteeing complete privacy." />
+    <meta name="keywords" content="free background remover, compress image to 50kb, image upscaler, remove bg hd, offline image converter, resize passport photo online, picswift" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PicSwift - Free Browser-Side AI Image Suite" />
+    <meta property="og:description" content="Remove backgrounds from photos, compress to exact KB limits, and upscale images offline in your browser with PicSwift. 100% secure and private." />
+    <meta property="og:image" content="https://picswift.pages.dev/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="PicSwift - Free Browser-Side AI Image Suite" />
+    <meta property="twitter:description" content="Remove backgrounds, compress to exact size, and upscale images offline in your browser with PicSwift." />
+    
+    <!-- Structured Schema JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "PicSwift",
+        "url": "https://picswift.pages.dev",
+        "description": "Browser-side image suite containing AI Background Eraser, Target KB Compressor, and AI Image Upscaler running locally in WebAssembly.",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires WebAssembly support.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0.00",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is my image uploaded to any server for background removal or compression?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No, your files never leave your computer. PicSwift runs all AI models and compression calculations locally inside your browser using WebAssembly (ONNX Runtime Web), ensuring 100% privacy."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does target-size compression work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Our smart algorithm uses binary search. It loops internally, adjusting image quality parameters until the compressed file fits the requested KB limit perfectly."
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
