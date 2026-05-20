@@ -66,7 +66,7 @@ export default function App() {
     if (showAuthModal && typeof window !== 'undefined' && (window as any).google) {
       try {
         (window as any).google.accounts.id.initialize({
-          client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
           callback: async (response: any) => {
             setAuthLoading(true);
             setAuthError(null);
