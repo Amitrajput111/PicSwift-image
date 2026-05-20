@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# PicSwift ⚡ — Privacy-First AI Creative Suite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**PicSwift** is a modern, high-performance, 100% client-side image utility suite designed to process, compress, and erase image backgrounds directly in the web browser. 
 
-Currently, two official plugins are available:
+By running all neural network inference and compression computations locally using **WebAssembly (WASM)** and the **HTML5 Canvas API**, PicSwift guarantees absolute user privacy and operates with **zero server-side compute costs**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🚀 Key Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **⚡ Smart Target-Size Compressor:** Uses a binary-search optimization loop to compress images (JPEG, PNG, WebP) down to an exact user-specified file size limit (e.g., under 20KB, 50KB) for official passport portals, without sacrificing unnecessary pixel density.
+*   **🔮 AI Background Eraser:** Erases image backgrounds locally in HD using a lightweight, quantized **MODNet** neural network convolved in-browser. Resulting cutouts are saved as high-resolution transparent PNG files.
+*   **🖼️ AI Image Upscaler:** Magnifies low-resolution images (2x or 4x scale) using high-quality bilinear resampling convolved with a custom **5x5 Gaussian Unsharp Mask** sharpening filter.
+*   **🔒 Absolute Privacy:** Images are never transmitted or stored on any remote backend server. All computing is local and ephemeral.
+*   **💰 AdSense & SEO Ready:** Includes built-in Privacy Policy, Terms of Service, Contact pages, JSON-LD FAQ/WebApplication schemas, and styled banner slots ready for monetization.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠️ Architecture & Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+*   **Frontend Framework:** React 19 + TypeScript + Vite
+*   **Local AI Inference:** ONNX Runtime Web (`onnxruntime-web`) via WebAssembly
+*   **Style System:** Custom glassmorphism variables with dark & light theme triggers
+*   **Icons:** Lucide React
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📦 How to Run Locally
+
+### Prerequisites
+Make sure you have [Node.js](https://nodejs.org/) installed.
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/Amitrajput111/PicSwift-image.git
+cd PicSwift-image
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Install dependencies
+```bash
+npm install
 ```
+
+### 3. Start local development server
+```bash
+npm run dev
+```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser.
+
+---
+
+## 🛸 Production Deployment
+
+Since PicSwift is entirely static, it can be hosted for **free** on global CDNs:
+
+### Option A: Vercel CLI (Recommended)
+```bash
+npx vercel
+```
+*Follow the terminal prompts to link and deploy to your Vercel Dashboard.*
+
+### Option B: Netlify Drop
+Simply drag and drop the compiled **`dist/`** folder (generated by running `npm run build`) onto **[Netlify Drop](https://app.netlify.com/drop)** to go live in seconds.
+
+---
+
+## 👤 Author & Founder
+
+**Amit Rajput**  
+*Founder & AI Engineer*  
+*   **LinkedIn:** [linkedin.com/in/amitrajput111](https://linkedin.com/in/amitrajput111)  
+*   **GitHub:** [@Amitrajput111](https://github.com/Amitrajput111)  
+*   **Email:** amitrajput98267313@gmail.com  
+
+---
+
+## 📄 License
+This project is open-source and free for personal and commercial distribution. You retain 100% ownership and copyrights of all images processed through this suite.
