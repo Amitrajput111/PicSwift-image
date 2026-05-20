@@ -2,32 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 import https from 'https';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DB_PATH = path.join(__dirname, 'users.json');
+import { UserRepo } from './db.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'picswift_super_secret_session_token_key_12345';
-
-// Helper: Read/Write users
-const readUsers = () => {
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    return [];
-  }
-};
-
-const writeUsers = (users) => {
-  fs.writeFileSync(DB_PATH, JSON.stringify(users, null, 2), 'utf8');
-};
 
 // Helper: Hashing function in pure JS (SHA-256 equivalent for portability)
 const hashPassword = (password) => {
@@ -68,7 +48,6 @@ const verifyGoogleToken = (credential) => {
 };
 
 // 40-Year Experienced Developer Dynamic CORS Handler
-// Automatically supports localhost ports, subdomains, Vercel deployments, and secure environments
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
@@ -106,7 +85,7 @@ const getCookieOptions = (req) => {
   return {
     httpOnly: true,
     secure: isSecure,
-    sameSite: isSecure ? 'none' : 'lax', // Use 'none' cross-site only on secure production channels
+    sameSite: isSecure ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   };
 };
@@ -114,65 +93,68 @@ const getCookieOptions = (req) => {
 // Endpoints
 
 // 1. Sign Up
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
   const { email, password, name } = req.body;
   if (!email || !password || !name) {
     return res.status(400).json({ error: 'All fields (email, password, name) are required.' });
   }
 
-  const users = readUsers();
-  const exists = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  if (exists) {
-    return res.status(400).json({ error: 'User with this email already exists.' });
+  try {
+    const exists = await UserRepo.findOne({ email: email.toLowerCase() });
+    if (exists) {
+      return res.status(400).json({ error: 'User with this email already exists.' });
+    }
+
+    const newUser = await UserRepo.create({
+      name,
+      email: email.toLowerCase(),
+      password: hashPassword(password)
+    });
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set Cookie
+    res.cookie('token', token, getCookieOptions(req));
+
+    return res.json({
+      success: true,
+      user: { name: newUser.name, email: newUser.email }
+    });
+  } catch (err) {
+    console.error('Signup error:', err);
+    return res.status(500).json({ error: 'Internal server error during registration.' });
   }
-
-  const newUser = {
-    id: Date.now().toString(),
-    name,
-    email: email.toLowerCase(),
-    password: hashPassword(password),
-    usages: 0
-  };
-
-  users.push(newUser);
-  writeUsers(users);
-
-  // Generate JWT Token
-  const token = jwt.sign({ id: newUser.id, email: newUser.email }, JWT_SECRET, { expiresIn: '7d' });
-
-  // Set Cookie
-  res.cookie('token', token, getCookieOptions(req));
-
-  return res.json({
-    success: true,
-    user: { name: newUser.name, email: newUser.email }
-  });
 });
 
 // 2. Log In
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
 
-  const users = readUsers();
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  try {
+    const user = await UserRepo.findOne({ email: email.toLowerCase() });
 
-  if (!user || user.password !== hashPassword(password)) {
-    return res.status(401).json({ error: 'Invalid email or password.' });
+    if (!user || user.password !== hashPassword(password)) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set Cookie
+    res.cookie('token', token, getCookieOptions(req));
+
+    return res.json({
+      success: true,
+      user: { name: user.name, email: user.email }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    return res.status(500).json({ error: 'Internal server error during login.' });
   }
-
-  // Generate JWT Token
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-
-  // Set Cookie
-  res.cookie('token', token, getCookieOptions(req));
-
-  return res.json({
-    success: true,
-    user: { name: user.name, email: user.email }
-  });
 });
 
 // 3. Google OAuth Verification (Real Production Mode)
@@ -183,7 +165,7 @@ app.post('/api/auth/google', async (req, res) => {
   }
 
   try {
-    // Validate Google JWT Token securely using native HTTPS
+    // Validate Google JWT Token securely
     const payload = await verifyGoogleToken(credential);
     const { email, name } = payload;
 
@@ -191,19 +173,14 @@ app.post('/api/auth/google', async (req, res) => {
       return res.status(400).json({ error: 'Google profile did not contain email address.' });
     }
 
-    const users = readUsers();
-    let user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    let user = await UserRepo.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      user = {
-        id: Date.now().toString(),
+      user = await UserRepo.create({
         name: name || email.split('@')[0],
         email: email.toLowerCase(),
-        password: 'google_oauth_registered_account_secure',
-        usages: 0
-      };
-      users.push(user);
-      writeUsers(users);
+        password: 'google_oauth_registered_account_secure'
+      });
     }
 
     // Generate JWT Token
@@ -223,36 +200,36 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // 4. Google Auth Mock (For local development testing without Client ID keys)
-app.post('/api/auth/google-mock', (req, res) => {
-  const users = readUsers();
-  let user = users.find(u => u.email.toLowerCase() === 'amit.rajput@gmail.com');
+app.post('/api/auth/google-mock', async (req, res) => {
+  try {
+    let user = await UserRepo.findOne({ email: 'amit.rajput@gmail.com' });
 
-  if (!user) {
-    user = {
-      id: Date.now().toString(),
-      name: 'Amit Rajput',
-      email: 'amit.rajput@gmail.com',
-      password: 'google_oauth_registered_account_secure',
-      usages: 0
-    };
-    users.push(user);
-    writeUsers(users);
+    if (!user) {
+      user = await UserRepo.create({
+        name: 'Amit Rajput',
+        email: 'amit.rajput@gmail.com',
+        password: 'google_oauth_registered_account_secure'
+      });
+    }
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set Cookie
+    res.cookie('token', token, getCookieOptions(req));
+
+    return res.json({
+      success: true,
+      user: { name: user.name, email: user.email }
+    });
+  } catch (err) {
+    console.error('Google Mock Login error:', err);
+    return res.status(500).json({ error: 'Internal server error during sandbox login.' });
   }
-
-  // Generate JWT Token
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
-
-  // Set Cookie
-  res.cookie('token', token, getCookieOptions(req));
-
-  return res.json({
-    success: true,
-    user: { name: user.name, email: user.email }
-  });
 });
 
 // 5. Get Session User (Verify HTTP-Only Token)
-app.get('/api/auth/me', (req, res) => {
+app.get('/api/auth/me', async (req, res) => {
   const token = req.cookies.token;
   if (!token) {
     return res.status(401).json({ error: 'No active session found.' });
@@ -260,8 +237,7 @@ app.get('/api/auth/me', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const users = readUsers();
-    const user = users.find(u => u.id === decoded.id);
+    const user = await UserRepo.findById(decoded.id);
 
     if (!user) {
       return res.status(404).json({ error: 'User session not found.' });
