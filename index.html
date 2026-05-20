@@ -8,6 +8,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="1Q_9T7F9HEyA_zKT5i6DT885iRnyLvtmYzNGJuGNhNc" />
     
+    <!-- Google AdSense Auto Ads (Self-detecting dynamic loader) -->
+    <script>
+      (function() {
+        // REPLACE the value below with your approved Google AdSense publisher ID (e.g. ca-pub-1234567890123456)
+        const adsensePublisherID = "ca-pub-XXXXXXXXXXXXXXXX"; 
+        
+        if (adsensePublisherID && adsensePublisherID !== "ca-pub-XXXXXXXXXXXXXXXX") {
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsensePublisherID}`;
+          script.crossOrigin = "anonymous";
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
+    
     <!-- SEO Titles and Tags -->
     <title>PicSwift - Free AI Background Remover, Target Size Image Compressor & Upscaler</title>
     <meta name="description" content="100% free browser-side AI image utility suite. Remove backgrounds from photos in HD, compress images to exact KB sizes (under 20kb, 50kb), and upscale images to 4x locally with PicSwift. No file uploads to server, guaranteeing complete privacy." />
