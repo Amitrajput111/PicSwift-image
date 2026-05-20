@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import { UserRepo } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -93,16 +94,9 @@ const getCookieOptions = (req) => {
   };
 };
 
-// Helper: Hashing function in pure JS (SHA-256 equivalent for portability)
+// Helper: Hashing function using native Node crypto HMAC-SHA256 for secure hashing
 const hashPassword = (password) => {
-  let hash = 0;
-  const salted = password + "picswift_salt_982";
-  for (let i = 0; i < salted.length; i++) {
-    const char = salted.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash.toString(16);
+  return crypto.createHmac('sha256', JWT_SECRET).update(password).digest('hex');
 };
 
 // Helper: Native HTTPS Google Token Verifier (Compatible with all Node.js versions)
