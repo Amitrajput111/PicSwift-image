@@ -99,6 +99,29 @@ export default function Header({ activeTab, setActiveTab, user, onAuthClick, onL
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
+          {/* Go Pro / Support Button (High-conversion revenue CTA) */}
+          <button
+            onClick={() => window.open('https://ko-fi.com', '_blank')}
+            className="btn btn-secondary"
+            style={{
+              height: '40px',
+              padding: '0 0.85rem',
+              fontSize: '0.85rem',
+              borderRadius: '10px',
+              fontWeight: 700,
+              border: '1px solid rgba(255, 215, 0, 0.35)',
+              background: 'linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,165,0,0.1) 100%)',
+              color: '#ffd700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Sparkles size={14} fill="#ffd700" />
+            <span>Go Pro</span>
+          </button>
+
           {/* Authentication Badge */}
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
