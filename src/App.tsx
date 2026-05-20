@@ -90,6 +90,35 @@ export default function App() {
     }
   }, [showAuthModal]);
 
+  useEffect(() => {
+    // Dynamic SEO Titles & Meta Descriptions for Search Engines
+    const seoMap: Record<string, { title: string; desc: string }> = {
+      compress: {
+        title: 'Compress Image to Exact KB Online (Free & Unlimited) - PicSwift',
+        desc: 'Compress images to target sizes (under 20kb, 50kb, 100kb) in JPG, PNG, or WebP. 100% private in-browser compression tool.'
+      },
+      'bg-remover': {
+        title: 'Free AI Background Remover Online (HD & No Watermark) - PicSwift',
+        desc: 'Remove image backgrounds instantly with AI. High-definition output, local WebAssembly processing, and absolute data privacy.'
+      },
+      upscaler: {
+        title: 'AI Image Upscaler & Detail Enhancer (2x / 4x Super Resolution) - PicSwift',
+        desc: 'Increase photo resolution and enhance details locally using advanced neural networks. Fast, private, and 100% free.'
+      }
+    };
+
+    const currentSeo = seoMap[activeTab] || seoMap.compress;
+    
+    // Update Page Title
+    document.title = currentSeo.title;
+    
+    // Update Meta Description dynamically for search engine bots
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', currentSeo.desc);
+    }
+  }, [activeTab]);
+
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
